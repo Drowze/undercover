@@ -99,7 +99,7 @@ describe Undercover::CLI do
   it 'returns 0 exit code on success' do
     stub_stdout
 
-    mock_report = instance_double(Undercover::Report, validate: nil)
+    mock_report = instance_double(Undercover::Report, validate: nil, format!: nil)
     stub_build.and_return(mock_report)
 
     expect(mock_report).to receive(:flagged_results) { [] }
@@ -109,7 +109,7 @@ describe Undercover::CLI do
   it 'returns 1 exit code on warnings' do
     stub_stdout
 
-    mock_report = instance_double(Undercover::Report, validate: nil)
+    mock_report = instance_double(Undercover::Report, validate: nil, format!: nil)
     stub_build.and_return(mock_report)
 
     mock_formatter = instance_double(Undercover::PrettyFormatter, run: nil)
@@ -120,7 +120,7 @@ describe Undercover::CLI do
   end
 
   it 'prints changeset validation for stale coverage' do
-    mock_report = instance_double(Undercover::Report, validate: :stale_coverage)
+    mock_report = instance_double(Undercover::Report, validate: :stale_coverage, format!: nil)
     stub_build.and_return(mock_report)
 
     expected_output = "#{Undercover::CLI::WARNINGS_TO_S[:stale_coverage]}\n"

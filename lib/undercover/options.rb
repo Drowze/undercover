@@ -5,26 +5,10 @@ require 'pathname'
 
 module Undercover
   class Options
-    RUN_MODE = [
-      RUN_MODE_DIFF_STRICT = :diff_strict, # warn for changed lines
-      # RUN_MODE_DIFF_FILES  = :diff_files, # warn for changed whole files
-      # RUN_MODE_ALL         = :diff_all, # warn for allthethings
-      # RUN_MODE_FILES       = :files # warn for specific files (cli option)
-    ].freeze
-
-    OUTPUT_FORMATTERS = [
-      OUTPUT_STDOUT = :pretty, # outputs warnings to stdout with exit 1
-      # OUTPUT_CIRCLEMATOR = :circlemator # posts warnings as review comments
-    ].freeze
-
-    attr_accessor :lcov, :path, :git_dir, :compare, :syntax_version,
-      :enabled_formatters
+    attr_accessor :lcov, :path, :git_dir, :compare, :syntax_version
 
     def initialize
-      # TODO: use run modes
-      # TODO: use formatters
-      @run_mode = RUN_MODE_DIFF_STRICT
-      @enabled_formatters = Set.new([:pretty])
+      @formatter_loader = Undercover::FormatterLoader.new
       # set defaults
       self.path = '.'
       self.git_dir = '.git'
@@ -47,6 +31,7 @@ module Undercover
           exit
         end
 
+        require_option(opts)
         formatter_option(opts)
         lcov_path_option(opts)
         project_path_option(opts)
@@ -62,6 +47,10 @@ module Undercover
       self
     end
     # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
+
+    def formatters
+      @formatter_loader.enabled_formatters
+    end
 
     private
 
@@ -83,13 +72,16 @@ module Undercover
       './.undercover'
     end
 
-    def formatter_option(parser)
-      parsed_formatters = Set.new
-      parser.on('-f', '--formatter formatter', 'Formatter to output results') do |formatter|
-        parsed_formatters << formatter
+    def require_option(parser)
+      parser.on('--require FILE', 'Require Ruby file') do |file|
+        require file
       end
+    end
 
-      self.enabled_formatters = parsed_formatters if parsed_formatters.any?
+    def formatter_option(parser)
+      parser.on('-f', '--formatter formatter', 'Formatter to output results') do |formatter|
+        @formatter_loader.enable!(formatter)
+      end
     end
 
     def lcov_path_option(parser)

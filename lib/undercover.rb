@@ -10,6 +10,7 @@ require 'undercover/lcov_parser'
 require 'undercover/result'
 require 'undercover/cli'
 require 'undercover/changeset'
+require 'undercover/formatter_loader'
 require 'undercover/pretty_formatter'
 require 'undercover/options'
 require 'undercover/version'
@@ -32,6 +33,7 @@ module Undercover
       @lcov = LcovParser.parse(File.open(opts.lcov))
       @code_dir = opts.path
       @changeset = changeset.update
+      @enabled_formatters = opts.formatters
       @loaded_files = {}
       @results = {}
     end
@@ -62,6 +64,12 @@ module Undercover
       self
     end
     # rubocop:enable Metrics/MethodLength, Metrics/AbcSize, Metrics/CyclomaticComplexity
+
+    def format!
+      @enabled_formatters.each do |formatter|
+        formatter.new(flagged_results).run
+      end
+    end
 
     def build_warnings
       warn('Undercover::Report#build_warnings is deprecated! ' \
