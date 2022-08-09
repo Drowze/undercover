@@ -13,17 +13,18 @@ module Undercover
     ].freeze
 
     OUTPUT_FORMATTERS = [
-      OUTPUT_STDOUT = :stdout, # outputs warnings to stdout with exit 1
+      OUTPUT_STDOUT = :pretty, # outputs warnings to stdout with exit 1
       # OUTPUT_CIRCLEMATOR = :circlemator # posts warnings as review comments
     ].freeze
 
-    attr_accessor :lcov, :path, :git_dir, :compare, :syntax_version
+    attr_accessor :lcov, :path, :git_dir, :compare, :syntax_version,
+      :enabled_formatters
 
     def initialize
       # TODO: use run modes
       # TODO: use formatters
       @run_mode = RUN_MODE_DIFF_STRICT
-      @enabled_formatters = [OUTPUT_STDOUT]
+      @enabled_formatters = Set.new([:pretty])
       # set defaults
       self.path = '.'
       self.git_dir = '.git'
@@ -46,6 +47,7 @@ module Undercover
           exit
         end
 
+        formatter_option(opts)
         lcov_path_option(opts)
         project_path_option(opts)
         git_dir_option(opts)
@@ -79,6 +81,15 @@ module Undercover
 
     def project_options_file
       './.undercover'
+    end
+
+    def formatter_option(parser)
+      parsed_formatters = Set.new
+      parser.on('-f', '--formatter formatter', 'Formatter to output results') do |formatter|
+        parsed_formatters << formatter
+      end
+
+      self.enabled_formatters = parsed_formatters if parsed_formatters.any?
     end
 
     def lcov_path_option(parser)

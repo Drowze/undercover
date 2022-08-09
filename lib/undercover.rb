@@ -10,7 +10,7 @@ require 'undercover/lcov_parser'
 require 'undercover/result'
 require 'undercover/cli'
 require 'undercover/changeset'
-require 'undercover/formatter'
+require 'undercover/pretty_formatter'
 require 'undercover/options'
 require 'undercover/version'
 

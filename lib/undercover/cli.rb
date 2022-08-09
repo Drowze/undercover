@@ -32,8 +32,20 @@ module Undercover
       end
 
       flagged = report.flagged_results
-      puts Undercover::Formatter.new(flagged)
+      formatters(opts).each do |formatter_klass|
+        formatter_klass.new(flagged).run
+      end
+
       flagged.any? ? 1 : 0
+    end
+
+    def self.formatters(opts)
+      opts.enabled_formatters.map do |formatter_name|
+        formatter_name_classified =
+          formatter_name.to_s.split('_').map(&:capitalize).join
+
+        Object.const_get("Undercover::#{formatter_name_classified}Formatter")
+      end
     end
 
     def self.syntax_version(version)

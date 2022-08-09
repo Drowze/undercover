@@ -3,7 +3,7 @@
 require 'spec_helper'
 require 'undercover'
 
-describe Undercover::Formatter do
+describe Undercover::PrettyFormatter do
   context 'without warnings' do
     let(:results) { {} }
 

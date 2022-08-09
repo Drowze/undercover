@@ -60,47 +60,34 @@ module Undercover
     end
     # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
-    # TODO: create a formatter interface instead and add some tests.
     # TODO: re-enable rubocops
-    # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
     #
     # Zips coverage data (that doesn't include any non-code lines) with
     # full source for given code fragment (this includes non-code lines!)
-    def pretty_print_lines
+    def lines_with_data # rubocop:disable Metrics/MethodLength
       cov_enum = coverage.each
-      cov_source_lines = (node.first_line..node.last_line).map do |line_no|
+      node.source_lines_with_numbers.map do |line_no, source|
         cov_line_no = begin
           cov_enum.peek[0]
         rescue StopIteration
           -1
         end
-        cov_enum.next[1] if cov_line_no == line_no
+        {
+          line_no: line_no,
+          source: source,
+          hits: cov_line_no == line_no ? cov_enum.next[1] : nil,
+          branch_coverage: branch_coverage_for(line_no)
+        }
       end
-      cov_source_lines.zip(node.source_lines_with_numbers)
     end
 
-    # TODO: move to formatter interface instead!
-    def pretty_print
-      pad = node.last_line.to_s.length
-      pretty_print_lines.map do |covered, (num, line)|
-        formatted_line = "#{num.to_s.rjust(pad)}: #{line}"
-        if line.strip.length.zero?
-          Rainbow(formatted_line).darkgray.dark
-        elsif covered.nil?
-          Rainbow(formatted_line).darkgray.dark + \
-            Rainbow(' hits: n/a').italic.darkgray.dark
-        elsif covered.positive?
-          Rainbow(formatted_line).green + \
-            Rainbow(" hits: #{covered}").italic.darkgray.dark + \
-            count_covered_branches(num)
-        elsif covered.zero?
-          Rainbow(formatted_line).red + \
-            Rainbow(" hits: #{covered}").italic.darkgray.dark + \
-            count_covered_branches(num)
-        end
-      end.join("\n")
+    def branch_coverage_for(line_number)
+      branches = coverage.select { |cov| cov.size == 4 && cov[0] == line_number }
+      return if branches.size.zero?
+
+      count_covered = branches.count { |cov| cov[3].positive? }
+      {total_branches: branches.size, covered_branches: count_covered}
     end
-    # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
 
     def file_path_with_lines
       "#{file_path}:#{first_line}:#{last_line}"
@@ -111,23 +98,5 @@ module Undercover
         " name: #{node.name}, coverage: #{coverage_f}>"
     end
     alias to_s inspect
-
-    private
-
-    # rubocop:disable Metrics/AbcSize
-    def count_covered_branches(line_number)
-      branches = coverage.select { |cov| cov.size == 4 && cov[0] == line_number }
-      count_covered = branches.count { |cov| cov[3].positive? }
-
-      return '' if branches.size.zero?
-
-      if count_covered < branches.size
-        Rainbow(' branches: ').italic.darkgray.dark + \
-          Rainbow("#{count_covered}/#{branches.size}").italic.red
-      else
-        Rainbow(" branches: #{count_covered}/#{branches.size}").italic.darkgray.dark
-      end
-    end
-    # rubocop:enable Metrics/AbcSize
   end
 end
